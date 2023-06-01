@@ -1,4 +1,3 @@
-
 #' Extract expression matrix from Seurat object or matrix
 #'
 #' This function extracts the expression matrix from either a Seurat object or a matrix object. If a Seurat object is provided, the function can optionally specify the assay and slot to be used for extracting the expression matrix. If a matrix is provided, the function will create a Seurat object with the provided matrix and default metadata fields. The function can also specify the minimum number of cells and features required to keep genes in the expression matrix.
@@ -13,7 +12,7 @@
 #' @return A matrix containing the expression data, with gene names as row names and cell barcodes as column names
 #' @examples
 #' expmtx <- assay2mtx(object = seurat_object, assay = "RNA", slot = "counts", min.cells = 10, min.features = 5)
-#' expmtx <-assay2mtx(object = expression_matrix, min.cells = 10, min.features = 5)
+#' expmtx <- assay2mtx(object = expression_matrix, min.cells = 10, min.features = 5)
 #'
 assay2mtx <- function(object, assay = NULL, slot = "counts", min.cells = 3, min.features = 1, update = F) {
   if (any(methods::is(object) %in% "Seurat")) {
@@ -33,11 +32,11 @@ assay2mtx <- function(object, assay = NULL, slot = "counts", min.cells = 3, min.
 #' @author Qiong Zhang
 #' @return feature-specific gini scores.
 #'
-ginirev <- function(x, rev = T){
+ginirev <- function(x, rev = T) {
   .x <- sort(x)
   .G <- sum(.x * 1L:length(.x))
-  .G <- 2 * .G/sum(.x) - (length(.x) + 1L)
-  .G <- .G/length(.x)
+  .G <- 2 * .G / sum(.x) - (length(.x) + 1L)
+  .G <- .G / length(.x)
   if (rev) .G <- 1 - .G
   return(.G)
 }
@@ -50,37 +49,39 @@ ginirev <- function(x, rev = T){
 #' @return binary matrix
 #' @author Qiong Zhang
 #'
-expMat2Bin <- function(mat, pattern = "min", cutoff = NULL){
-  .stabe2b <- function(mat, pattern, cutoff = NULL){
-    if (pattern == "rowMean"){
+expMat2Bin <- function(mat, pattern = "min", cutoff = NULL) {
+  .stabe2b <- function(mat, pattern, cutoff = NULL) {
+    if (pattern == "rowMean") {
       .x.m <- Matrix::rowMeans(mat)
-      return( list(mat = mat > .x.m[rownames(mat)], cutoff = cutoff))
+      return(list(mat = mat > .x.m[rownames(mat)], cutoff = cutoff))
     }
     .x <- mat@x
-    if (is.null(cutoff)){
+    if (is.null(cutoff)) {
       .cutoff <- switch(pattern,
-                        "min" = min(.x),
-                        "max" = max(.x),
-                        "mean" = mean(.x),
-                        "median" = median(.x),
-                        stop("Error: pattern need to be one of 'min', 'max', 'median', 'mean' and 'adpmed'. ")
+        "min" = min(.x),
+        "max" = max(.x),
+        "mean" = mean(.x),
+        "median" = median(.x),
+        stop("Error: pattern need to be one of 'min', 'max', 'median', 'mean' and 'adpmed'. ")
       )
-    }else{
+    } else {
       .cutoff <- as.numeric(cutff)
     }
     .index <- which(.x > .cutoff)
     .dp <- diff(mat@p)
     .col.index <- (rep(seq_along(.dp), .dp))[.index]
-    .row.index <- (mat@i+1)[.index]
+    .row.index <- (mat@i + 1)[.index]
     .mat.new <- Matrix::sparseMatrix(.row.index[1], .col.index[1], dims = mat@Dim)
     .mat.new[cbind(.row.index, .col.index)] <- 1
     .mat.new <- as(.mat.new, "dgCMatrix")
     rownames(.mat.new) <- rownames(mat)
     return(list(mat = .mat.new, cutoff = .cutoff))
   }
-  .adpmed <- function(mat){
-    .m.multi <- Mclust(Matrix::rowSums(mat), 1:30, modelNames=c("V"), verbose = FALSE)
-    if (.m.multi$G == 1) return(.stabe2b(mat, type = "median") )
+  .adpmed <- function(mat) {
+    .m.multi <- Mclust(Matrix::rowSums(mat), 1:30, modelNames = c("V"), verbose = FALSE)
+    if (.m.multi$G == 1) {
+      return(.stabe2b(mat, type = "median"))
+    }
     .mat.new <- list()
     .cutff <- rep(0, .m.multi$G)
     for (i in seq_along(1:.m.multi$G)) {
@@ -89,8 +90,8 @@ expMat2Bin <- function(mat, pattern = "min", cutoff = NULL){
       .index <- which(.x.clu@x >= .cutff[i])
       .dp <- diff(.x.clu@p)
       .col.index <- (rep(seq_along(.dp), .dp))[.index]
-      .row.index <- (.x.clu@i+1)[.index]
-      .mat.new[[i]] <- Matrix::sparseMatrix(.row.index[1], .col.index[1], dims=.x.clu@Dim)
+      .row.index <- (.x.clu@i + 1)[.index]
+      .mat.new[[i]] <- Matrix::sparseMatrix(.row.index[1], .col.index[1], dims = .x.clu@Dim)
       .mat.new[[i]][cbind(.row.index, .col.index)] <- 1
       .mat.new[[i]] <- as(.mat.new[[i]], "dgCMatrix")
       rownames(.mat.new[[i]]) <- rownames(.x.clu)
@@ -98,9 +99,9 @@ expMat2Bin <- function(mat, pattern = "min", cutoff = NULL){
     .mat.new <- do.call(rbind, .mat.new)
     return(list(mat = .mat.new, cutoff = .cutoff))
   }
-  if (pattern == "adpmed"){
+  if (pattern == "adpmed") {
     .exp2bin <- .adpmed(mat)
-  }else {
+  } else {
     .exp2bin <- .stabe2b(mat = mat, pattern = pattern, cutoff = cutoff)
   }
   return(.exp2bin)
@@ -114,7 +115,7 @@ expMat2Bin <- function(mat, pattern = "min", cutoff = NULL){
 #' @author Qiong Zhang
 #'
 scaleZO <- function(x) {
-  (x-min(x))/(max(x)-min(x))
+  (x - min(x)) / (max(x) - min(x))
 }
 
 #' calculate prior probabilities for clusters
@@ -136,7 +137,7 @@ calProb4C <- function(x) {
 #' @author Qiong Zhang
 #'
 calProb4G <- function(mat) {
-  .prob4G <- as.vector( (Matrix::rowSums(mat)) / ncol(mat) )
+  .prob4G <- as.vector((Matrix::rowSums(mat)) / ncol(mat))
   names(.prob4G) <- rownames(mat)
   return(.prob4G)
 }
@@ -144,20 +145,20 @@ calProb4G <- function(mat) {
 #' calculate probabilities genes in clusters
 #'
 #' @param mat expression matrix
-#' @param cluProb
+#' @param cluProb cluster
 #' @param cluID
 #' @param cpu
 #' @name calProbGIC
 #' @return probabilities of genes in clusters
 #' @author Qiong Zhang
 #'
-#get gene probability conditional on cluster
+# get gene probability conditional on cluster
 calProbGIC <- function(mat, cluProb, cluID, cpu = 1) {
   .clusterID <- names(cluProb)
   if (cpu > 1) {
-    .GIC <- do.call(cbind, mclapply(1:length(.clusterID), function(i) Matrix::rowMeans(mat[,which(cluID == .clusterID[i])]), mc.cores = cpu))
+    .GIC <- do.call(cbind, mclapply(1:length(.clusterID), function(i) Matrix::rowMeans(mat[, which(cluID == .clusterID[i])]), mc.cores = cpu))
   } else {
-    .GIC <- do.call(cbind, lapply(1:length(.clusterID), function(i) Matrix::rowMeans(mat[,which(cluID == .clusterID[i])])))
+    .GIC <- do.call(cbind, lapply(1:length(.clusterID), function(i) Matrix::rowMeans(mat[, which(cluID == .clusterID[i])])))
   }
   .GIC <- as(.GIC, "dgCMatrix")
   colnames(.GIC) <- .clusterID
@@ -175,7 +176,6 @@ calProbGIC <- function(mat, cluProb, cluID, cpu = 1) {
 #' @author Qiong Zhang
 #'
 calProbCIG <- function(binmat, probG, ProbC) {
-
   .prob <- t(apply(log(binmat), 1, function(x) x + log(ProbC)))
   .prob <- exp(apply(.prob, 2, function(x) x - log(probG)))
   colnames(.prob) <- names(ProbC)
@@ -192,8 +192,7 @@ calProbCIG <- function(binmat, probG, ProbC) {
 #' @author Qiong Zhang
 #'
 calGeneFea <- function(ginc, binmat, scale = F) {
-
-  if (isTRUE(scale)){
+  if (isTRUE(scale)) {
     .genefeature <- apply(ginc * binmat, 2, scaleZO)
   } else {
     .genefeature <- exp(log(ginc) + log(binmat))
@@ -211,7 +210,7 @@ calGeneFea <- function(ginc, binmat, scale = F) {
 #'
 probEnt <- function(x) {
   .et <- 0
-  if (any(x > 0 )) {
+  if (any(x > 0)) {
     .t <- x[which(x > 0)]
     .et <- -(sum(.t * (log(.t))))
   }
@@ -225,9 +224,9 @@ probEnt <- function(x) {
 #' @return the entropy value
 #' @author Qiong Zhang
 #'
-shannoEnt <- function(x){
-  .p <- x/sum(x,na.rm=TRUE)
-  .entropy <- -sum(.p * log(.p), na.rm=TRUE)
+shannoEnt <- function(x) {
+  .p <- x / sum(x, na.rm = TRUE)
+  .entropy <- -sum(.p * log(.p), na.rm = TRUE)
   return(.entropy)
 }
 
@@ -245,7 +244,7 @@ calMutInfo <- function(a, b) {
   if (.al != .bl) stop("Inequal elements between the two vectors ")
   .a <- probEnt(calProb4C(a))
   .b <- probEnt(calProb4C(b))
-  .ab <- probEnt(table(a,b) / .bl)
+  .ab <- probEnt(table(a, b) / .bl)
   .a + .b - .ab
 }
 
@@ -264,10 +263,10 @@ calLLRSim <- function(a, b, n) {
   .aSPE <- .a - .aANDb
   .bSPE <- .b - .aANDb
   .abNOT <- sum(!(a + b))
-  .entropy.row <- shannoEnt(c(.b, n - .b ))
-  .entropy.col <- shannoEnt(c(.a, n - .a ))
+  .entropy.row <- shannoEnt(c(.b, n - .b))
+  .entropy.col <- shannoEnt(c(.a, n - .a))
   .entropy.mat <- shannoEnt(c(.aANDb, .bSPE, .aSPE, .abNOT))
-  .llRSim <- 2*n*(.entropy.row + .entropy.col - .entropy.mat)
+  .llRSim <- 2 * n * (.entropy.row + .entropy.col - .entropy.mat)
   return(.llRSim)
 }
 
@@ -293,9 +292,8 @@ calTFIDF <- function(condMat) {
 #' @return validated clusterIDs
 #' @author Qiong Zhang
 #'
-clusidQC <- function(mat, clusterIDs){
-
-  if ( any(table(clusterIDs) < 2)) stop("Several clusters comprised of only one cell. Please check clusterIDs")
+clusidQC <- function(mat, clusterIDs) {
+  if (any(table(clusterIDs) < 2)) stop("Several clusters comprised of only one cell. Please check clusterIDs")
   if (length(levels(clusterIDs)) < 2) stop("Only one cluster exists in clusterIDs!")
   .ncell <- ncol(mat)
   .cluIDs.len <- length(clusterIDs)
@@ -311,16 +309,16 @@ clusidQC <- function(mat, clusterIDs){
 #' @return pesudo binmatrix matrix
 #' @author Qiong Zhang
 #'
-buildPesudoBinMatrix <- function(clusterIDs, combine = FALSE, value = 3){
+buildPesudoBinMatrix <- function(clusterIDs, combine = FALSE, value = 3) {
   .clusters.levels <- levels(clusterIDs)
   clusterIDs <- as.numeric(clusterIDs)
   .cluster.uniq <- unique(clusterIDs)
   .cluster.name <- .clusters.levels[.cluster.uniq]
   .pesu.lst <- as.list(.cluster.uniq)
-  if (isTRUE(combine)){
+  if (isTRUE(combine)) {
     .defvalue <- length(.cluster.uniq) / 2
     if (value > .defvalue) value <- .defvalue
-    for(i in 2:value){
+    for (i in 2:value) {
       .tmp.combination <- as.data.frame(combn(.cluster.uniq, i))
       .pesu.lst <- c(.pesu.lst, as.list(.tmp.combination))
       .cluster.name <- c(.cluster.name, unlist(lapply(.tmp.combination, function(x) paste0(.clusters.levels[x], collapse = ".AND."))))
@@ -350,7 +348,6 @@ buildPesudoBinMatrix <- function(clusterIDs, combine = FALSE, value = 3){
 #' @return data.frame with marker features of each cluster.
 #'
 LLRMarker <- function(mat, clusterIDs, binmethod = "min", expR = 0.1, cpu = 1, marker = 20) {
-
   clusterIDs <- clusidQC(mat, clusterIDs)
   .clusIDs <- as.factor(clusterIDs)
   .clusterIDs.int <- as.integer(clusterIDs)
@@ -366,19 +363,20 @@ LLRMarker <- function(mat, clusterIDs, binmethod = "min", expR = 0.1, cpu = 1, m
   .ginc <- calProbCIG(.binmat.f, .gene.prob, .clu.prob)
   .gfeat <- calGeneFea(.ginc, .binmat.f)
   .w <- replicate(ncol(.gfeat), Matrix::rowSums(.gfeat))
-  .gfeat.n <- .gfeat^3 / .w ^ 2
+  .gfeat.n <- .gfeat^3 / .w^2
   .gfeat.s <- sqrt(.gfeat / (.w - .gfeat))
   .clu.n <- ncol(.gfeat.s)
   .marker.n <- do.call(cbind, lapply(1:.clu.n, function(x, marker) {
-    names(sort(.gfeat.n[, x], decreasing = T)[1:marker])}, marker))
+    names(sort(.gfeat.n[, x], decreasing = T)[1:marker])
+  }, marker))
   .marker.s <- do.call(cbind, lapply(1:.clu.n, function(x, marker) {
     .x.s <- names(sort(.gfeat.s[, x], decreasing = T)[1:marker])
     .k.b <- names(sort(.binmat[.x.s, x], decreasing = T))
-    }, marker))
+  }, marker))
   .col.name <- colnames(.gfeat.s)
   colnames(.marker.s) <- .col.name
   colnames(.marker.n) <- .col.name
-  return(list( NormM = .marker.n, SpecM = .marker.s, pct = .binmat))
+  return(list(NormM = .marker.n, SpecM = .marker.s, pct = .binmat))
 }
 
 #' Recommend marker genes for expression matrix or Seurat object
@@ -390,16 +388,18 @@ LLRMarker <- function(mat, clusterIDs, binmethod = "min", expR = 0.1, cpu = 1, m
 #' @param cpu How many cores will be used for detection of markers
 #' @param marker The number of markers returned.
 #' @name markerREC
+#' @export
 #' @author Qiong Zhang
 #' @return data.frame of marker features in each cluster.
+#' @examples marker.mr <- markerREC(pbmc3k.final)
 #'
 markerREC <- function(obj, assay = "RNA", slot = "data", binmethod = "min", expR = 0.1, cpu = 1, marker = 20, clusterIDs = NULL) {
   require("Seurat", quietly = T)
   .mat <- assay2mtx(object = obj, assay = assay, slot = slot, min.cells = 3, min.features = 1)
   if (is.null(clusterIDs)) {
     clusterIDs <- Seurat::Idents(obj)
-  } else{
-    if ( length(clusterIDs) != ncol(.mat)) clusterIDs <- obj@meta.data[[clusterIDs]]
+  } else {
+    if (length(clusterIDs) != ncol(.mat)) clusterIDs <- obj@meta.data[[clusterIDs]]
   }
   .markers <- LLRMarker(mat = .mat, clusterIDs = clusterIDs, binmethod = binmethod, expR = expR, cpu = cpu, marker = marker)
   return(.markers)
