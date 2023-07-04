@@ -347,13 +347,13 @@ buildPesudoBinMatrix <- function(clusterIDs, combine = FALSE, value = 3) {
 #' @author Qiong Zhang
 #' @return data.frame with marker features of each cluster.
 #'
-LLRMarker <- function(mat, clusterIDs, binmethod = "min", expR = 0.1, cpu = 1, marker = 20) {
+LLRMarker <- function(mat, clusterIDs, binmethod = "min", expR = 0.1, cpu = 1, marker = 20, cutoff = 3) {
   clusterIDs <- clusidQC(mat, clusterIDs)
   .clusIDs <- as.factor(clusterIDs)
   .clusterIDs.int <- as.integer(clusterIDs)
   .clusterIDs.lev <- levels(clusterIDs)
   .mat <- as(mat, "dgCMatrix")
-  .mat.bin <- expMat2Bin(.mat, pattern = binmethod)
+  .mat.bin <- expMat2Bin(.mat, pattern = binmethod, cutoff = cutoff)
   .clu.prob <- calProb4C(.clusterIDs.int)
   names(.clu.prob) <- .clusterIDs.lev
   .binmat <- calProbGIC(.mat.bin$mat, .clu.prob, clusterIDs, cpu = cpu)
@@ -393,14 +393,13 @@ LLRMarker <- function(mat, clusterIDs, binmethod = "min", expR = 0.1, cpu = 1, m
 #' @return data.frame of marker features in each cluster.
 #' @examples marker.mr <- markerREC(pbmc3k.final)
 #'
-markerREC <- function(obj, assay = "RNA", slot = "data", binmethod = "min", expR = 0.1, cpu = 1, marker = 20, clusterIDs = NULL) {
-  require("Seurat", quietly = T)
+markerREC <- function(obj, assay = "RNA", slot = "data", binmethod = "min", expR = 0.25, cpu = 1, marker = 20, clusterIDs = NULL, cutoff = 3) {
   .mat <- assay2mtx(object = obj, assay = assay, slot = slot, min.cells = 3, min.features = 1)
   if (is.null(clusterIDs)) {
     clusterIDs <- Seurat::Idents(obj)
   } else {
     if (length(clusterIDs) != ncol(.mat)) clusterIDs <- obj@meta.data[[clusterIDs]]
   }
-  .markers <- LLRMarker(mat = .mat, clusterIDs = clusterIDs, binmethod = binmethod, expR = expR, cpu = cpu, marker = marker)
+  .markers <- LLRMarker(mat = .mat, clusterIDs = clusterIDs, binmethod = binmethod, expR = expR, cpu = cpu, marker = marker, cutoff = cutoff)
   return(.markers)
 }
