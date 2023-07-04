@@ -65,7 +65,7 @@ expMat2Bin <- function(mat, pattern = "min", cutoff = NULL) {
         stop("Error: pattern need to be one of 'min', 'max', 'median', 'mean' and 'adpmed'. ")
       )
     } else {
-      .cutoff <- as.numeric(cutff)
+      .cutoff <- as.numeric(cutoff)
     }
     .index <- which(.x > .cutoff)
     .dp <- diff(mat@p)
@@ -83,11 +83,11 @@ expMat2Bin <- function(mat, pattern = "min", cutoff = NULL) {
       return(.stabe2b(mat, type = "median"))
     }
     .mat.new <- list()
-    .cutff <- rep(0, .m.multi$G)
+    .cutoff <- rep(0, .m.multi$G)
     for (i in seq_along(1:.m.multi$G)) {
       .x.clu <- mat[which(.m.multi$classification == i), ]
-      .cutff[i] <- median(.x.clu@x)
-      .index <- which(.x.clu@x >= .cutff[i])
+      .cutoff[i] <- median(.x.clu@x)
+      .index <- which(.x.clu@x >= .cutoff[i])
       .dp <- diff(.x.clu@p)
       .col.index <- (rep(seq_along(.dp), .dp))[.index]
       .row.index <- (.x.clu@i + 1)[.index]
