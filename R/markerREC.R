@@ -14,7 +14,7 @@
 #' expmtx <- assay2mtx(object = seurat_object, assay = "RNA", slot = "counts", min.cells = 10, min.features = 5)
 #' expmtx <- assay2mtx(object = expression_matrix, min.cells = 10, min.features = 5)
 #'
-assay2mtx <- function(object, assay = NULL, slot = "counts", min.cells = 3, min.features = 1, update = F) {
+assay2mtx <- function(object, assay = NULL, slot = "counts", min.cells = 3, min.features = 1, update = F, excludeRM = T) {
   if (any(methods::is(object) %in% "Seurat")) {
     assay <- if (is.null(assay)) Seurat::DefaultAssay(object) else assay
     object <- if (isTRUE(update)) Seurat::UpdateSeuratObject(object) else object
@@ -22,7 +22,16 @@ assay2mtx <- function(object, assay = NULL, slot = "counts", min.cells = 3, min.
     object <- Seurat::CreateSeuratObject(counts = object, project = "GSES", assay = "RNA", min.cells = min.cells, min.features = min.features)
     assay <- "RNA"
   }
-  Seurat::GetAssayData(object, assay = assay, slot = slot)
+  .expMat <- Seurat::GetAssayData(object, assay = assay, slot = slot)
+  if (isTrue(excludeRM)){
+    .genes.all <- rownames(.expMat)
+    .qual_qc_terms.h <- tibble::tibble(word_reg = c("^RP[SL]", "^MT-", "^HB[^(P)]"), term_name = c("percent_ribo", "percent_mito", "percent_hb"))
+    .qual_qc_terms.m <- tibble::tibble(word_reg = c("^Rp[sl]", "^Mt-", "^Hb[^(p)]"), term_name = c("percent_ribo", "percent_mito", "percent_hb"))
+    .genes.filter.preset <- grep(str_c(c(.qual_qc_terms.h$word_reg, .qual_qc_terms.m$word_reg), collapse = "|"), .genes.all, value = T)
+    .expMat <- .expMat[!(.genes.all %in% .genes.filter.preset), ]
+    .expMat <- .expMat[ , matrixStats::colSums2(.expMat) > 100]
+  }
+  return(.expMat)
 }
 
 #' Calculate gini specific score for markers
@@ -393,8 +402,8 @@ LLRMarker <- function(mat, clusterIDs, binmethod = "min", expR = 0.1, cpu = 1, m
 #' @return data.frame of marker features in each cluster.
 #' @examples marker.mr <- markerREC(pbmc3k.final)
 #'
-markerREC <- function(obj, assay = "RNA", slot = "data", binmethod = "min", expR = 0.25, cpu = 1, marker = 20, clusterIDs = NULL, cutoff = 3) {
-  .mat <- assay2mtx(object = obj, assay = assay, slot = slot, min.cells = 3, min.features = 1)
+markerREC <- function(obj, assay = "RNA", slot = "data", binmethod = "min", expR = 0.25, cpu = 1, marker = 20, clusterIDs = NULL, cutoff = 3, excludeRM = T) {
+  .mat <- assay2mtx(object = obj, assay = assay, slot = slot, min.cells = 3, min.features = 1, excludeRM = T)
   if (is.null(clusterIDs)) {
     clusterIDs <- Seurat::Idents(obj)
   } else {
