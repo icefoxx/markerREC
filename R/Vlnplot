@@ -1,0 +1,17 @@
+library(ggplot2)
+if(!require(PupillometryR)) install.packages('PupillometryR')
+
+head(mpg)
+
+ggplot(data = mpg, aes(x = class, y = hwy)) + 
+  geom_flat_violin(aes(fill = class), 
+                   position = position_nudge(x = .25), #调整小提琴图的位置，使其不要位于正中间，而向右偏移
+                   color = 'black',
+                   trim = F) + 
+  geom_jitter(aes(color = class), width = .1) +
+  geom_boxplot(width = .1, 
+               position = position_nudge(x = .25), #调整箱线图的位置，使其不要位于正中间，而向右偏移
+               fill = 'white', 
+               size = .5) + 
+  theme_test() +
+  theme(legend.position = 'none') #隐藏图例，因为图例和横坐标信息的冗余的
